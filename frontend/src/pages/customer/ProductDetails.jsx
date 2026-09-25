@@ -5,6 +5,7 @@ import axios from "axios";
 function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const token = localStorage.getItem("token");
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,6 +18,11 @@ function ProductDetails() {
 
   const handleSubmitReview = async (e) => {
     e.preventDefault();
+
+    if (!reviewComment.trim()) {
+      alert("Please write a review before submitting.");
+      return;
+    }
 
     try {
       const token = localStorage.getItem("token");
@@ -230,17 +236,43 @@ function ProductDetails() {
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-          {/* Product Image */}
-          <div className="flex items-center justify-center bg-gray-50 rounded-xl p-8">
-            {product.images?.[0] ? (
-              <img
-                src={product.images[0]}
-                alt={product.name}
-                className="w-full max-w-md h-96 object-contain"
-              />
-            ) : (
-              <div className="h-96 flex items-center justify-center text-gray-400">
-                No Image Available
+          {/* Product Image Gallery */}
+          <div>
+            {/* Main Image */}
+            <div className="flex items-center justify-center bg-gray-50 rounded-xl p-8">
+              {selectedImage ? (
+                <img
+                  src={selectedImage}
+                  alt={product.name}
+                  className="w-full max-w-md h-96 object-contain"
+                />
+              ) : (
+                <div className="h-96 flex items-center justify-center text-gray-400">
+                  No Image Available
+                </div>
+              )}
+            </div>
+
+            {/* Thumbnails */}
+            {product.images?.length > 1 && (
+              <div className="flex gap-3 mt-4 overflow-x-auto">
+                {product.images.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImage(image)}
+                    className={`w-20 h-20 border rounded-lg p-2 flex-shrink-0 ${
+                      selectedImage === image
+                        ? "border-orange-500"
+                        : "border-gray-200"
+                    }`}
+                  >
+                    <img
+                      src={image}
+                      alt={`${product.name} ${index + 1}`}
+                      className="w-full h-full object-contain"
+                    />
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -257,7 +289,7 @@ function ProductDetails() {
 
             <div className="flex items-center gap-2 mt-4">
               <span className="bg-green-600 text-white px-3 py-1 rounded-md text-sm">
-                ⭐ {product.rating}
+                ★ {product.rating}
               </span>
 
               <span className="text-gray-500 text-sm">
@@ -365,43 +397,58 @@ function ProductDetails() {
                 Write a Review
               </h2>
 
-              <form onSubmit={handleSubmitReview} className="mt-5">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Rating
-                </label>
+              {token ? (
+                <form onSubmit={handleSubmitReview} className="mt-5">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Rating
+                  </label>
 
-                <select
-                  value={reviewRating}
-                  onChange={(e) => setReviewRating(e.target.value)}
-                  className="w-full md:w-48 border border-gray-300 rounded-lg px-4 py-3 outline-none focus:border-orange-500"
-                >
-                  <option value="5">★★★★★ - 5</option>
-                  <option value="4">★★★★☆ - 4</option>
-                  <option value="3">★★★☆☆ - 3</option>
-                  <option value="2">★★☆☆☆ - 2</option>
-                  <option value="1">★☆☆☆☆ - 1</option>
-                </select>
+                  <select
+                    value={reviewRating}
+                    onChange={(e) => setReviewRating(e.target.value)}
+                    className="w-full md:w-48 border border-gray-300 rounded-lg px-4 py-3 outline-none focus:border-orange-500"
+                  >
+                    <option value="5">★★★★★ - 5</option>
+                    <option value="4">★★★★☆ - 4</option>
+                    <option value="3">★★★☆☆ - 3</option>
+                    <option value="2">★★☆☆☆ - 2</option>
+                    <option value="1">★☆☆☆☆ - 1</option>
+                  </select>
 
-                <label className="block text-sm font-medium text-gray-700 mt-5 mb-2">
-                  Your Review
-                </label>
+                  <label className="block text-sm font-medium text-gray-700 mt-5 mb-2">
+                    Your Review
+                  </label>
 
-                <textarea
-                  value={reviewComment}
-                  onChange={(e) => setReviewComment(e.target.value)}
-                  placeholder="Write your experience with this product..."
-                  rows="4"
-                  required
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:border-orange-500 resize-none"
-                />
+                  <textarea
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    placeholder="Write your experience with this product..."
+                    rows="4"
+                    required
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:border-orange-500 resize-none"
+                  />
 
-                <button
-                  type="submit"
-                  className="mt-4 bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium"
-                >
-                  Submit Review
-                </button>
-              </form>
+                  <button
+                    type="submit"
+                    className="mt-4 bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium"
+                  >
+                    Submit Review
+                  </button>
+                </form>
+              ) : (
+                <div className="mt-5 text-center">
+                  <p className="text-gray-500">
+                    Please login to write a review.
+                  </p>
+
+                  <button
+                    onClick={() => navigate("/login")}
+                    className="mt-3 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-lg font-medium"
+                  >
+                    Login to Review
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="mt-10 bg-white rounded-xl border p-6">
