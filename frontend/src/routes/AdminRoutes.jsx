@@ -16,6 +16,7 @@ import AdminCategories from "../pages/admin/AdminCategories";
 import AdminBrands from "../pages/admin/AdminBrands";
 import AdminReviews from "../pages/admin/AdminReviews";
 import AdminCoupons from "../pages/admin/AdminCoupons";
+import AdminSettings from "../pages/admin/AdminSettings";
 
 // Customer Components
 import CustomerRoute from "./CustomerRoute";
@@ -73,6 +74,7 @@ function AdminRoutes() {
           <Route path="/admin/brands" element={<AdminBrands />} />
           <Route path="/admin/reviews" element={<AdminReviews />} />
           <Route path="/admin/coupons" element={<AdminCoupons />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
         </Route>
       </Route>
     </Routes>

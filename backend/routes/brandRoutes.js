@@ -10,15 +10,35 @@ const {
 
 const { protect, adminOnly } = require("../middleware/authMiddleware");
 
+const uploadBrandLogo = require("../middleware/brandUploadMiddleware");
+
 const router = express.Router();
 
-// Public routes
+// Get all brands
 router.get("/", getBrands);
+
+// Get single brand
 router.get("/:id", getBrandById);
 
-// Admin routes
-router.post("/", protect, adminOnly, createBrand);
-router.put("/:id", protect, adminOnly, updateBrand);
+// Create brand
+router.post(
+  "/",
+  protect,
+  adminOnly,
+  uploadBrandLogo.single("logo"),
+  createBrand,
+);
+
+// Update brand
+router.put(
+  "/:id",
+  protect,
+  adminOnly,
+  uploadBrandLogo.single("logo"),
+  updateBrand,
+);
+
+// Delete brand
 router.delete("/:id", protect, adminOnly, deleteBrand);
 
 module.exports = router;

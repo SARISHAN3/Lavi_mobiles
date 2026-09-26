@@ -235,6 +235,12 @@ function ProductDetails() {
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm p-6">
+        <button
+          onClick={() => navigate("/products")}
+          className="mb-6 text-orange-500 hover:text-orange-600 font-medium flex items-center gap-2"
+        >
+          ← Back to Mobiles
+        </button>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
           {/* Product Image Gallery */}
           <div>

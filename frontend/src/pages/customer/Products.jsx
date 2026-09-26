@@ -77,6 +77,39 @@ function Products() {
     }
   };
 
+  const handleAddToCart = async (productId) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        alert("Please login to add products to cart.");
+        return;
+      }
+
+      await axios.post(
+        "http://localhost:5000/api/cart/add",
+        {
+          productId,
+          quantity: 1,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      alert("Product added to cart successfully");
+    } catch (error) {
+      console.error(
+        "Add to cart error:",
+        error.response?.data || error.message,
+      );
+
+      alert(error.response?.data?.message || "Failed to add product to cart");
+    }
+  };
+
   const clearFilters = () => {
     setSearchParams({});
     setBrand("");
@@ -540,12 +573,22 @@ function Products() {
                   </div>
 
                   {/* Details Button */}
-                  <Link
-                    to={`/product/${product._id}`}
-                    className="block text-center mt-5 bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-lg font-medium"
-                  >
-                    View Details
-                  </Link>
+                  <div className="flex gap-2 mt-5">
+                    <button
+                      onClick={() => handleAddToCart(product._id)}
+                      disabled={product.stock <= 0}
+                      className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-lg font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                      {product.stock <= 0 ? "Out of Stock" : "Add to Cart"}
+                    </button>
+
+                    <Link
+                      to={`/product/${product._id}`}
+                      className="flex-1 text-center border border-orange-500 text-orange-500 hover:bg-orange-50 py-2.5 rounded-lg font-medium"
+                    >
+                      View Details
+                    </Link>
+                  </div>
                 </div>
               </div>
             ))}

@@ -1,5 +1,4 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
 import {
   FiMenu,
   FiX,
@@ -8,7 +7,10 @@ import {
   FiShoppingCart,
   FiHeart,
   FiPackage,
+  FiHome,
+  FiLogOut,
 } from "react-icons/fi";
+import { useState } from "react";
 
 function Navbar() {
   const navigate = useNavigate();
@@ -40,132 +42,175 @@ function Navbar() {
     navigate("/login");
   };
 
-  const closeMenu = () => {
-    setMenuOpen(false);
-  };
-
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-50">
+    <header className="bg-gray-950 text-white sticky top-0 z-50 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="h-16 flex items-center justify-between gap-4">
-          {/* Logo */}
+        <div className="h-20 flex items-center gap-6">
+          {/* ================= LOGO ================= */}
           <Link
             to="/"
-            onClick={closeMenu}
-            className="text-2xl font-bold text-orange-500 whitespace-nowrap"
+            className="text-2xl md:text-3xl font-bold text-white whitespace-nowrap"
           >
             Lavi Mobile
           </Link>
 
-          {/* Desktop Search */}
+          {/* ================= DESKTOP MENU ================= */}
+          <div
+            className="hidden lg:block relative group"
+            onMouseEnter={() => setMenuOpen(true)}
+            onMouseLeave={() => setMenuOpen(false)}
+          >
+            {/* Menu Button */}
+            <button className="flex items-center gap-2 text-white hover:text-orange-400 transition">
+              <FiMenu size={22} />
+              <span className="font-medium">Menu</span>
+            </button>
+
+            {/* Dropdown */}
+            <div
+              className={`
+                absolute left-0 top-full pt-3
+                transition-all duration-200
+                ${
+                  menuOpen
+                    ? "opacity-100 visible translate-y-0"
+                    : "opacity-0 invisible -translate-y-2"
+                }
+              `}
+            >
+              <div className="w-64 bg-white text-gray-800 rounded-lg shadow-xl border border-gray-200 overflow-hidden">
+                {/* Home */}
+                <Link
+                  to="/"
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-orange-50 hover:text-orange-500 transition"
+                >
+                  <FiHome />
+                  Home
+                </Link>
+
+                {/* Mobile Phones */}
+                <Link
+                  to="/products"
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-orange-50 hover:text-orange-500 transition"
+                >
+                  📱 Mobile Phones
+                </Link>
+
+                {/* Wishlist */}
+                <Link
+                  to="/wishlist"
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-orange-50 hover:text-orange-500 transition"
+                >
+                  <FiHeart />
+                  Wishlist
+                </Link>
+
+                {/* Orders */}
+                <Link
+                  to="/orders"
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-orange-50 hover:text-orange-500 transition"
+                >
+                  <FiPackage />
+                  Orders
+                </Link>
+
+                <div className="border-t border-gray-200" />
+
+                {/* Profile */}
+                {token && user ? (
+                  <>
+                    <Link
+                      to="/profile"
+                      className="flex items-center gap-3 px-5 py-3 hover:bg-orange-50 hover:text-orange-500 transition"
+                    >
+                      <FiUser />
+                      Profile
+                    </Link>
+
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-red-50 hover:text-red-500 transition"
+                    >
+                      <FiLogOut />
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      to="/login"
+                      className="flex items-center gap-3 px-5 py-3 hover:bg-orange-50 hover:text-orange-500 transition"
+                    >
+                      <FiUser />
+                      Login
+                    </Link>
+
+                    <Link
+                      to="/register"
+                      className="flex items-center gap-3 px-5 py-3 hover:bg-orange-50 hover:text-orange-500 transition"
+                    >
+                      ✨ Register
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ================= SEARCH ================= */}
           <form
             onSubmit={handleSearch}
-            className="hidden md:flex items-center flex-1 max-w-md"
+            className="hidden md:flex items-center flex-1 max-w-2xl mx-auto"
           >
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search mobiles..."
-              className="w-full border border-gray-300 rounded-l-lg px-4 py-2 outline-none focus:border-orange-500"
+              placeholder="What are you looking for?"
+              className="w-full bg-white text-gray-800 px-5 py-3 rounded-l-lg outline-none placeholder-gray-400"
             />
 
             <button
               type="submit"
-              className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-r-lg"
+              className="bg-white text-gray-800 px-5 py-3 rounded-r-lg hover:text-orange-500 transition"
             >
-              <FiSearch size={20} />
+              <FiSearch size={22} />
             </button>
           </form>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-5">
-            <Link to="/" className="text-gray-700 hover:text-orange-500">
-              Home
-            </Link>
-
+          {/* ================= RIGHT SIDE ================= */}
+          <div className="flex items-center gap-5 ml-auto">
+            {/* Profile */}
             <Link
-              to="/products"
-              className="text-gray-700 hover:text-orange-500"
+              to={token && user ? "/profile" : "/login"}
+              className="text-white hover:text-orange-400 transition"
+              title={token && user ? "Profile" : "Login"}
             >
-              Mobiles
+              <FiUser size={25} />
             </Link>
 
-            <Link
-              to="/wishlist"
-              className="text-gray-700 hover:text-orange-500 flex items-center gap-1"
-            >
-              <FiHeart />
-              Wishlist
-            </Link>
-
-            <Link
-              to="/orders"
-              className="text-gray-700 hover:text-orange-500 flex items-center gap-1"
-            >
-              <FiPackage />
-              Orders
-            </Link>
-
+            {/* Cart */}
             <Link
               to="/cart"
-              className="text-gray-700 hover:text-orange-500 flex items-center gap-1"
+              className="text-white hover:text-orange-400 transition relative"
+              title="Cart"
             >
-              <FiShoppingCart />
-              Cart
+              <FiShoppingCart size={25} />
             </Link>
-          </nav>
 
-          {/* Desktop User Section */}
-          <div className="hidden lg:flex items-center gap-3">
-            {token && user ? (
-              <>
-                <Link
-                  to="/profile"
-                  className="text-gray-700 hover:text-orange-500 flex items-center gap-1"
-                >
-                  <FiUser />
-                  Profile
-                </Link>
-
-                <button
-                  onClick={handleLogout}
-                  className="bg-gray-900 hover:bg-black text-white px-4 py-2 rounded-lg text-sm"
-                >
-                  Logout
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="text-gray-700 hover:text-orange-500"
-                >
-                  Login
-                </Link>
-
-                <Link
-                  to="/register"
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm"
-                >
-                  Register
-                </Link>
-              </>
-            )}
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="lg:hidden text-white hover:text-orange-400"
+            >
+              {menuOpen ? <FiX size={27} /> : <FiMenu size={27} />}
+            </button>
           </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="lg:hidden text-gray-700 hover:text-orange-500"
-          >
-            {menuOpen ? <FiX size={26} /> : <FiMenu size={26} />}
-          </button>
         </div>
 
-        {/* Mobile Menu */}
+        {/* ================= MOBILE MENU ================= */}
         {menuOpen && (
-          <div className="lg:hidden border-t border-gray-200 py-4">
+          <div className="lg:hidden border-t border-gray-700 py-4">
             {/* Mobile Search */}
             <form onSubmit={handleSearch} className="flex items-center mb-4">
               <input
@@ -173,39 +218,40 @@ function Navbar() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search mobiles..."
-                className="w-full border border-gray-300 rounded-l-lg px-4 py-2 outline-none focus:border-orange-500"
+                className="w-full bg-white text-gray-800 rounded-l-lg px-4 py-2.5 outline-none"
               />
 
               <button
                 type="submit"
-                className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-r-lg"
+                className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2.5 rounded-r-lg"
               >
                 <FiSearch size={20} />
               </button>
             </form>
 
             {/* Mobile Links */}
-            <nav className="flex flex-col gap-3">
+            <nav className="flex flex-col">
               <Link
                 to="/"
-                onClick={closeMenu}
-                className="text-gray-700 hover:text-orange-500 py-2"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-3 py-3 hover:text-orange-400"
               >
-                🏠 Home
+                <FiHome />
+                Home
               </Link>
 
               <Link
                 to="/products"
-                onClick={closeMenu}
-                className="text-gray-700 hover:text-orange-500 py-2"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-3 py-3 hover:text-orange-400"
               >
                 📱 Mobile Phones
               </Link>
 
               <Link
                 to="/wishlist"
-                onClick={closeMenu}
-                className="text-gray-700 hover:text-orange-500 py-2 flex items-center gap-2"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-3 py-3 hover:text-orange-400"
               >
                 <FiHeart />
                 Wishlist
@@ -213,30 +259,21 @@ function Navbar() {
 
               <Link
                 to="/orders"
-                onClick={closeMenu}
-                className="text-gray-700 hover:text-orange-500 py-2 flex items-center gap-2"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-3 py-3 hover:text-orange-400"
               >
                 <FiPackage />
                 Orders
               </Link>
 
-              <Link
-                to="/cart"
-                onClick={closeMenu}
-                className="text-gray-700 hover:text-orange-500 py-2 flex items-center gap-2"
-              >
-                <FiShoppingCart />
-                Cart
-              </Link>
-
-              <hr />
+              <hr className="border-gray-700 my-2" />
 
               {token && user ? (
                 <>
                   <Link
                     to="/profile"
-                    onClick={closeMenu}
-                    className="text-gray-700 hover:text-orange-500 py-2 flex items-center gap-2"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-3 py-3 hover:text-orange-400"
                   >
                     <FiUser />
                     Profile
@@ -244,29 +281,31 @@ function Navbar() {
 
                   <button
                     onClick={handleLogout}
-                    className="bg-gray-900 hover:bg-black text-white px-4 py-2 rounded-lg text-sm w-full"
+                    className="flex items-center gap-3 py-3 text-left hover:text-red-400"
                   >
+                    <FiLogOut />
                     Logout
                   </button>
                 </>
               ) : (
-                <div className="flex gap-3">
+                <>
                   <Link
                     to="/login"
-                    onClick={closeMenu}
-                    className="border border-gray-300 hover:border-orange-500 text-gray-700 px-4 py-2 rounded-lg text-sm flex-1 text-center"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-3 py-3 hover:text-orange-400"
                   >
+                    <FiUser />
                     Login
                   </Link>
 
                   <Link
                     to="/register"
-                    onClick={closeMenu}
-                    className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm flex-1 text-center"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-3 py-3 hover:text-orange-400"
                   >
-                    Register
+                    ✨ Register
                   </Link>
-                </div>
+                </>
               )}
             </nav>
           </div>

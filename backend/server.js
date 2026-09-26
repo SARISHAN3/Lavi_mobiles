@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 require("dotenv").config();
 
 const connectDB = require("./config/db");
@@ -15,6 +16,7 @@ const orderRoutes = require("./routes/orderRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
 const couponRoutes = require("./routes/couponRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
+const settingRoutes = require("./routes/settingRoutes");
 
 const app = express();
 
@@ -22,6 +24,8 @@ connectDB();
 
 app.use(cors());
 app.use(express.json());
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
@@ -34,6 +38,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/coupons", couponRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/settings", settingRoutes);
 
 app.get("/", (req, res) => {
   res.json({

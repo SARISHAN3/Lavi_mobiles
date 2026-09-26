@@ -10,15 +10,29 @@ const {
 
 const { protect, adminOnly } = require("../middleware/authMiddleware");
 
+const upload = require("../middleware/uploadMiddleware");
+
 const router = express.Router();
 
-// Public routes
+// =========================================================
+// CUSTOMER PRODUCT ROUTES
+// =========================================================
+
 router.get("/", getProducts);
+
 router.get("/:id", getProductById);
 
-// Admin routes
-router.post("/", protect, adminOnly, createProduct);
+// =========================================================
+// ADMIN PRODUCT ROUTES
+// =========================================================
+
+// Add product with image
+router.post("/", protect, adminOnly, upload.array("image", 10), createProduct);
+
+// Update product
 router.put("/:id", protect, adminOnly, updateProduct);
+
+// Delete product
 router.delete("/:id", protect, adminOnly, deleteProduct);
 
 module.exports = router;

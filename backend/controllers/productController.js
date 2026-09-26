@@ -165,16 +165,73 @@ const getProductById = async (req, res) => {
 // Create product
 const createProduct = async (req, res) => {
   try {
-    const product = await Product.create(req.body);
+    const {
+      name,
+      brand,
+      model,
+      price,
+      mrp,
+      discount,
+      description,
+      highlights,
+      ram,
+      storage,
+      operatingSystem,
+      network,
+      screenSize,
+      battery,
+      processor,
+      camera,
+      colors,
+      stock,
+      rating,
+      category,
+      isFeatured,
+    } = req.body;
+
+    // Create image array
+    let images = [];
+
+    if (req.files && req.files.length > 0) {
+      req.files.forEach((file) => {
+        images.push(`/uploads/products/${file.filename}`);
+      });
+    }
+
+    const product = await Product.create({
+      name,
+      brand,
+      model,
+      price,
+      mrp,
+      discount,
+      images,
+      description,
+      highlights,
+      ram,
+      storage,
+      operatingSystem,
+      network,
+      screenSize,
+      battery,
+      processor,
+      camera,
+      colors,
+      stock,
+      lowStockLimit,
+      rating,
+      category,
+      isFeatured,
+    });
 
     res.status(201).json({
       message: "Product created successfully",
       product,
     });
   } catch (error) {
-    console.error("Create product error:", error.message);
+    console.error("Create product error:", error);
 
-    res.status(400).json({
+    res.status(500).json({
       message: "Failed to create product",
       error: error.message,
     });

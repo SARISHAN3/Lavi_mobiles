@@ -103,6 +103,11 @@ const productSchema = new mongoose.Schema(
       default: 0,
     },
 
+    lowStockLimit: {
+      type: Number,
+      default: 5,
+    },
+
     rating: {
       type: Number,
       default: 0,
