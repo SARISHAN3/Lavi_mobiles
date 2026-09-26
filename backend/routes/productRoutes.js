@@ -30,7 +30,13 @@ router.get("/:id", getProductById);
 router.post("/", protect, adminOnly, upload.array("image", 10), createProduct);
 
 // Update product
-router.put("/:id", protect, adminOnly, updateProduct);
+router.put(
+  "/:id",
+  protect,
+  adminOnly,
+  upload.array("images", 10),
+  updateProduct,
+);
 
 // Delete product
 router.delete("/:id", protect, adminOnly, deleteProduct);

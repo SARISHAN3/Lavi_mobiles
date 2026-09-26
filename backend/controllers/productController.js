@@ -86,10 +86,16 @@ const getProducts = async (req, res) => {
       filter.stock = { $gt: 0 };
     }
 
+    if (availability === "low-stock") {
+      ((filter.stock = { $gt: ["$stock", 0] }),
+        { $lte: ["$stock", "$lowStockLimit"] });
+    }
+
     if (availability === "out-of-stock") {
       filter.stock = { $lte: 0 };
     }
 
+    // Sorting
     let sortOption = {
       createdAt: -1,
     };
@@ -184,6 +190,7 @@ const createProduct = async (req, res) => {
       camera,
       colors,
       stock,
+      lowStockLimit,
       rating,
       category,
       isFeatured,
