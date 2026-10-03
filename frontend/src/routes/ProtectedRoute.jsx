@@ -1,8 +1,10 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
+
 import { useAuth } from "../context/AuthContext";
 
-const AdminRoute = () => {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
+const ProtectedRoute = () => {
+  const { isAuthenticated, loading } = useAuth();
+
   const location = useLocation();
 
   if (loading) {
@@ -12,7 +14,7 @@ const AdminRoute = () => {
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-[var(--border-color)] border-t-orange-500" />
 
           <p className="mt-4 text-sm text-[var(--text-secondary)]">
-            Checking admin access...
+            Checking your account...
           </p>
         </div>
       </div>
@@ -20,14 +22,18 @@ const AdminRoute = () => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
-  }
-
-  if (!isAdmin) {
-    return <Navigate to="/home" replace />;
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{
+          from: location,
+        }}
+      />
+    );
   }
 
   return <Outlet />;
 };
 
-export default AdminRoute;
+export default ProtectedRoute;
