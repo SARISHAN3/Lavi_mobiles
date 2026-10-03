@@ -1,26 +1,55 @@
 const express = require("express");
 
 const {
-  addReview,
   getProductReviews,
+  getReviewSummary,
+  canReviewProduct,
+  createReview,
+  updateMyReview,
+  deleteMyReview,
   getAllReviews,
-  updateReviewApproval,
+  updateReviewStatus,
+  deleteReview,
 } = require("../controllers/reviewController");
 
 const { protect, adminOnly } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
+// =====================================
+// CUSTOMER / PUBLIC ROUTES
+// =====================================
+
 // Get reviews for a product
 router.get("/product/:productId", getProductReviews);
 
-// Get all reviews - Admin
-router.get("/admin/all", protect, adminOnly, getAllReviews);
+// Get rating summary for a product
+router.get("/product/:productId/summary", getReviewSummary);
 
-// Approve or hide review - Admin
-router.put("/admin/:id/approval", protect, adminOnly, updateReviewApproval);
+// Check whether logged-in customer
+// can review a product
+router.get("/product/:productId/can-review", protect, canReviewProduct);
 
-// Add a review
-router.post("/", protect, addReview);
+// Create review
+router.post("/", protect, createReview);
+
+// Update my review
+router.put("/:id", protect, updateMyReview);
+
+// Delete my review
+router.delete("/:id", protect, deleteMyReview);
+
+// =====================================
+// ADMIN ROUTES
+// =====================================
+
+// Get all reviews
+router.get("/", protect, adminOnly, getAllReviews);
+
+// Approve / disable review
+router.put("/:id/status", protect, adminOnly, updateReviewStatus);
+
+// Delete any review
+router.delete("/admin/:id", protect, adminOnly, deleteReview);
 
 module.exports = router;

@@ -20,6 +20,7 @@ const categorySchema = new mongoose.Schema(
     description: {
       type: String,
       default: "",
+      trim: true,
     },
 
     image: {

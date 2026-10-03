@@ -1,9 +1,12 @@
 const express = require("express");
 
 const {
+  getCoupons,
+  getCouponById,
   createCoupon,
-  getAllCoupons,
   updateCoupon,
+  toggleCouponStatus,
+  deleteCoupon,
   validateCoupon,
 } = require("../controllers/couponController");
 
@@ -11,16 +14,27 @@ const { protect, adminOnly } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-// Get all coupons - Admin
-router.get("/admin/all", protect, adminOnly, getAllCoupons);
+// =====================================
+// CUSTOMER
+// =====================================
 
-// Create coupon - Admin
+// Validate coupon during checkout
+router.post("/validate", protect, validateCoupon);
+
+// =====================================
+// ADMIN
+// =====================================
+
+router.get("/", protect, adminOnly, getCoupons);
+
+router.get("/:id", protect, adminOnly, getCouponById);
+
 router.post("/", protect, adminOnly, createCoupon);
 
-// Update coupon - Admin
 router.put("/:id", protect, adminOnly, updateCoupon);
 
-// Validate coupon - Customer
-router.post("/validate", protect, validateCoupon);
+router.put("/:id/status", protect, adminOnly, toggleCouponStatus);
+
+router.delete("/:id", protect, adminOnly, deleteCoupon);
 
 module.exports = router;

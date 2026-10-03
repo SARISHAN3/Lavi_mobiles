@@ -3,9 +3,10 @@ const express = require("express");
 const {
   createOrder,
   getMyOrders,
-  getOrderById,
-  cancelOrder,
+  getMyOrderById,
+  cancelMyOrder,
   getAllOrders,
+  getOrderById,
   updateOrderStatus,
 } = require("../controllers/orderController");
 
@@ -13,22 +14,33 @@ const { protect, adminOnly } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
+// =====================================
+// CUSTOMER ROUTES
+// =====================================
+
+// Create a new order
+router.post("/", protect, createOrder);
+
 // Get logged-in user's orders
 router.get("/my-orders", protect, getMyOrders);
 
-// Get all orders - Admin
-router.get("/admin/all", protect, adminOnly, getAllOrders);
+// Get logged-in user's single order
+router.get("/my-orders/:id", protect, getMyOrderById);
 
-// Update order status - Admin
-router.put("/admin/:id/status", protect, adminOnly, updateOrderStatus);
+// Cancel logged-in user's order
+router.put("/my-orders/:id/cancel", protect, cancelMyOrder);
+
+// =====================================
+// ADMIN ROUTES
+// =====================================
+
+// Get all orders
+router.get("/", protect, adminOnly, getAllOrders);
 
 // Get single order
-router.get("/:id", protect, getOrderById);
+router.get("/:id", protect, adminOnly, getOrderById);
 
-// Cancel order
-router.put("/:id/cancel", protect, cancelOrder);
-
-// Create order
-router.post("/", protect, createOrder);
+// Update order status
+router.put("/:id/status", protect, adminOnly, updateOrderStatus);
 
 module.exports = router;

@@ -7,11 +7,19 @@ const protect = async (req, res, next) => {
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
-        message: "Not authorized. Please login.",
+        success: false,
+        message: "Authentication required",
       });
     }
 
     const token = authHeader.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication token is missing",
+      });
+    }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
@@ -19,13 +27,15 @@ const protect = async (req, res, next) => {
 
     if (!user) {
       return res.status(401).json({
-        message: "User not found.",
+        success: false,
+        message: "User not found",
       });
     }
 
     if (!user.isActive) {
       return res.status(403).json({
-        message: "Your account is inactive.",
+        success: false,
+        message: "Your account is inactive",
       });
     }
 
@@ -33,18 +43,41 @@ const protect = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error("Authentication error:", error.message);
+    console.error("Authentication error:", error);
+
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication token has expired",
+      });
+    }
+
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid authentication token",
+      });
+    }
 
     return res.status(401).json({
-      message: "Invalid or expired token.",
+      success: false,
+      message: "Authentication failed",
     });
   }
 };
 
 const adminOnly = (req, res, next) => {
-  if (!req.user || req.user.role !== "admin") {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Authentication required",
+    });
+  }
+
+  if (req.user.role !== "admin") {
     return res.status(403).json({
-      message: "Admin access required.",
+      success: false,
+      message: "Admin access required",
     });
   }
 

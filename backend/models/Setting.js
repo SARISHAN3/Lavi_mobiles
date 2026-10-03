@@ -8,31 +8,37 @@ const settingSchema = new mongoose.Schema(
         default: "Lavi Mobile",
         trim: true,
       },
+
       email: {
         type: String,
         default: "",
         trim: true,
       },
+
       phone: {
         type: String,
         default: "",
         trim: true,
       },
+
       address: {
         type: String,
         default: "",
         trim: true,
       },
+
       city: {
         type: String,
         default: "",
         trim: true,
       },
+
       state: {
         type: String,
         default: "",
         trim: true,
       },
+
       pincode: {
         type: String,
         default: "",
@@ -45,18 +51,22 @@ const settingSchema = new mongoose.Schema(
         type: Boolean,
         default: true,
       },
+
       orderStatus: {
         type: Boolean,
         default: true,
       },
+
       lowStock: {
         type: Boolean,
         default: true,
       },
+
       newReview: {
         type: Boolean,
         default: true,
       },
+
       newUser: {
         type: Boolean,
         default: false,

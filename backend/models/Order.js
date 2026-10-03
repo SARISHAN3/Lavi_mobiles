@@ -11,6 +11,7 @@ const orderItemSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
+      trim: true,
     },
 
     image: {
@@ -21,12 +22,56 @@ const orderItemSchema = new mongoose.Schema(
     price: {
       type: Number,
       required: true,
+      min: 0,
     },
 
     quantity: {
       type: Number,
       required: true,
       min: 1,
+    },
+  },
+  {
+    _id: true,
+  },
+);
+
+const shippingAddressSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    phone: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    street: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    city: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    state: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    pincode: {
+      type: String,
+      required: true,
+      trim: true,
     },
   },
   {
@@ -45,64 +90,26 @@ const orderSchema = new mongoose.Schema(
     items: {
       type: [orderItemSchema],
       required: true,
+      validate: {
+        validator: (items) => items.length > 0,
+        message: "Order must contain at least one product",
+      },
     },
 
     shippingAddress: {
-      name: {
-        type: String,
-        required: true,
-      },
-
-      phone: {
-        type: String,
-        required: true,
-      },
-
-      street: {
-        type: String,
-        required: true,
-      },
-
-      city: {
-        type: String,
-        required: true,
-      },
-
-      state: {
-        type: String,
-        required: true,
-      },
-
-      pincode: {
-        type: String,
-        required: true,
-      },
-    },
-
-    totalAmount: {
-      type: Number,
+      type: shippingAddressSchema,
       required: true,
-    },
-
-    couponCode: {
-      type: String,
-      default: "",
-    },
-
-    discountAmount: {
-      type: Number,
-      default: 0,
     },
 
     paymentMethod: {
       type: String,
-      enum: ["COD", "ONLINE"],
+      enum: ["COD", "RAZORPAY"],
       default: "COD",
     },
 
     paymentStatus: {
       type: String,
-      enum: ["Pending", "Paid", "Failed"],
+      enum: ["Pending", "Paid", "Failed", "Refunded"],
       default: "Pending",
     },
 
@@ -119,10 +126,52 @@ const orderSchema = new mongoose.Schema(
       default: "Pending",
     },
 
-    orderNumber: {
-      type: String,
-      unique: true,
+    subtotal: {
+      type: Number,
       required: true,
+      min: 0,
+    },
+
+    discountAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    shippingAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    totalAmount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+
+    couponCode: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    couponId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Coupon",
+      default: null,
+    },
+
+    paymentTransactionId: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    notes: {
+      type: String,
+      default: "",
+      trim: true,
     },
   },
   {

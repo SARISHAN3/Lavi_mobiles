@@ -18,10 +18,11 @@ const cartItemSchema = new mongoose.Schema(
     price: {
       type: Number,
       required: true,
+      min: 0,
     },
   },
   {
-    _id: false,
+    _id: true,
   },
 );
 
@@ -34,11 +35,15 @@ const cartSchema = new mongoose.Schema(
       unique: true,
     },
 
-    items: [cartItemSchema],
+    items: {
+      type: [cartItemSchema],
+      default: [],
+    },
 
     totalAmount: {
       type: Number,
       default: 0,
+      min: 0,
     },
   },
   {

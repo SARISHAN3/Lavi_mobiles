@@ -1,260 +1,482 @@
+const mongoose = require("mongoose");
+
 const Order = require("../models/Order");
 const Cart = require("../models/Cart");
 const Product = require("../models/Product");
 const Coupon = require("../models/Coupon");
 
-// Create order from cart
+// =====================================
+// CREATE ORDER
+// =====================================
 const createOrder = async (req, res) => {
   try {
     const {
-      shippingAddress = {},
+      shippingAddress,
       paymentMethod = "COD",
       couponCode = "",
+      notes = "",
     } = req.body;
 
-    const { name, phone, street, city, state, pincode } = shippingAddress;
-
+    // -----------------------------
     // Validate shipping address
-    if (!name || !phone || !street || !city || !state || !pincode) {
+    // -----------------------------
+    if (!shippingAddress) {
       return res.status(400).json({
-        message: "Complete shipping address is required",
+        success: false,
+        message: "Shipping address is required",
       });
     }
 
-    // Only COD for now
-    if (paymentMethod !== "COD") {
+    const requiredAddressFields = [
+      "name",
+      "phone",
+      "street",
+      "city",
+      "state",
+      "pincode",
+    ];
+
+    for (const field of requiredAddressFields) {
+      if (!shippingAddress[field] || !String(shippingAddress[field]).trim()) {
+        return res.status(400).json({
+          success: false,
+          message: `${field} is required`,
+        });
+      }
+    }
+
+    // -----------------------------
+    // Validate payment method
+    // -----------------------------
+    if (!["COD", "RAZORPAY"].includes(paymentMethod)) {
       return res.status(400).json({
-        message: "Only Cash on Delivery is available currently",
+        success: false,
+        message: "Invalid payment method",
       });
     }
 
-    let appliedCoupon = null;
-    let discountAmount = 0;
-
-    if (couponCode) {
-      appliedCoupon = await Coupon.findOne({
-        code: couponCode.toUpperCase(),
-        isActive: true,
+    // Razorpay structure is supported,
+    // but actual payment integration comes later.
+    if (paymentMethod === "RAZORPAY") {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Razorpay payment is not available yet. Please use Cash on Delivery.",
       });
-
-      if (!appliedCoupon) {
-        return res.status(400).json({
-          message: "Invalid or inactive coupon",
-        });
-      }
-
-      const currentDate = new Date();
-
-      if (currentDate < appliedCoupon.startDate) {
-        return res.status(400).json({
-          message: "This coupon is not active yet",
-        });
-      }
-
-      if (currentDate > appliedCoupon.expiryDate) {
-        return res.status(400).json({
-          message: "This coupon has expired",
-        });
-      }
-
-      if (
-        appliedCoupon.usageLimit > 0 &&
-        appliedCoupon.usedCount >= appliedCoupon.usageLimit
-      ) {
-        return res.status(400).json({
-          message: "Coupon usage limit has been reached",
-        });
-      }
     }
 
+    // -----------------------------
     // Get user's cart
+    // -----------------------------
     const cart = await Cart.findOne({
       user: req.user._id,
     }).populate("items.product");
 
     if (!cart || cart.items.length === 0) {
       return res.status(400).json({
+        success: false,
         message: "Your cart is empty",
       });
     }
 
-    if (appliedCoupon) {
-      if (cart.totalAmount < appliedCoupon.minimumAmount) {
+    // -----------------------------
+    // Validate cart products
+    // -----------------------------
+    const validItems = [];
+
+    for (const item of cart.items) {
+      const product = item.product;
+
+      if (!product) {
         return res.status(400).json({
-          message: `Minimum order amount is ₹${appliedCoupon.minimumAmount}`,
+          success: false,
+          message: "One of the products in your cart no longer exists",
         });
       }
 
-      if (appliedCoupon.discountType === "percentage") {
-        discountAmount = (cart.totalAmount * appliedCoupon.discountValue) / 100;
+      if (!product.isActive) {
+        return res.status(400).json({
+          success: false,
+          message: `${product.name} is currently unavailable`,
+        });
+      }
+
+      if (product.stock < item.quantity) {
+        return res.status(400).json({
+          success: false,
+          message: `Only ${product.stock} item(s) of ${product.name} are available`,
+        });
+      }
+
+      validItems.push({
+        product: product._id,
+        name: product.name,
+        image:
+          product.images && product.images.length > 0 ? product.images[0] : "",
+        price: product.price,
+        quantity: item.quantity,
+      });
+    }
+
+    // -----------------------------
+    // Calculate subtotal
+    // -----------------------------
+    const subtotal = validItems.reduce(
+      (total, item) => total + Number(item.price) * Number(item.quantity),
+      0,
+    );
+
+    // -----------------------------
+    // Validate coupon
+    // -----------------------------
+    let coupon = null;
+    let discountAmount = 0;
+    let normalizedCouponCode = "";
+
+    if (couponCode && couponCode.trim()) {
+      normalizedCouponCode = couponCode.trim().toUpperCase();
+
+      coupon = await Coupon.findOne({
+        code: normalizedCouponCode,
+      });
+
+      if (!coupon) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid coupon code",
+        });
+      }
+
+      const now = new Date();
+
+      if (!coupon.isActive) {
+        return res.status(400).json({
+          success: false,
+          message: "This coupon is inactive",
+        });
+      }
+
+      if (now < coupon.startDate) {
+        return res.status(400).json({
+          success: false,
+          message: "This coupon is not active yet",
+        });
+      }
+
+      if (now > coupon.expiryDate) {
+        return res.status(400).json({
+          success: false,
+          message: "This coupon has expired",
+        });
+      }
+
+      if (coupon.usageLimit > 0 && coupon.usedCount >= coupon.usageLimit) {
+        return res.status(400).json({
+          success: false,
+          message: "This coupon usage limit has been reached",
+        });
+      }
+
+      if (subtotal < coupon.minimumOrderAmount) {
+        return res.status(400).json({
+          success: false,
+          message: `Minimum order amount for this coupon is ₹${coupon.minimumOrderAmount}`,
+        });
+      }
+
+      if (coupon.discountType === "percentage") {
+        discountAmount = (subtotal * coupon.discountValue) / 100;
 
         if (
-          appliedCoupon.maximumDiscount !== null &&
-          discountAmount > appliedCoupon.maximumDiscount
+          coupon.maximumDiscountAmount > 0 &&
+          discountAmount > coupon.maximumDiscountAmount
         ) {
-          discountAmount = appliedCoupon.maximumDiscount;
+          discountAmount = coupon.maximumDiscountAmount;
         }
-      } else {
-        discountAmount = appliedCoupon.discountValue;
+      } else if (coupon.discountType === "fixed") {
+        discountAmount = coupon.discountValue;
       }
 
-      if (discountAmount > cart.totalAmount) {
-        discountAmount = cart.totalAmount;
-      }
-    }
-
-    // Check stock
-    for (const item of cart.items) {
-      if (!item.product || !item.product.isActive) {
-        return res.status(400).json({
-          message: "One or more products are no longer available",
-        });
-      }
-
-      if (item.quantity > item.product.stock) {
-        return res.status(400).json({
-          message: `Insufficient stock for ${item.product.name}`,
-        });
+      // Discount cannot exceed subtotal.
+      if (discountAmount > subtotal) {
+        discountAmount = subtotal;
       }
     }
 
-    // Prepare order items
-    const orderItems = cart.items.map((item) => ({
-      product: item.product._id,
-      name: item.product.name,
-      image: item.product.images?.[0] || "",
-      price: item.price,
-      quantity: item.quantity,
-    }));
+    // -----------------------------
+    // Shipping
+    // -----------------------------
+    // Free shipping for now.
+    // Can be changed later based on
+    // admin settings/order amount.
+    const shippingAmount = 0;
 
-    // Generate order number
-    const orderNumber = `LAVI-${Date.now()}`;
+    const totalAmount = subtotal - discountAmount + shippingAmount;
 
+    // -----------------------------
     // Create order
+    // -----------------------------
     const order = await Order.create({
       user: req.user._id,
-      items: orderItems,
+
+      items: validItems,
+
       shippingAddress: {
-        name,
-        phone,
-        street,
-        city,
-        state,
-        pincode,
+        name: shippingAddress.name.trim(),
+        phone: shippingAddress.phone.trim(),
+        street: shippingAddress.street.trim(),
+        city: shippingAddress.city.trim(),
+        state: shippingAddress.state.trim(),
+        pincode: shippingAddress.pincode.trim(),
       },
-      totalAmount: cart.totalAmount - discountAmount,
-      couponCode: appliedCoupon ? appliedCoupon.code : "",
-      discountAmount,
-      paymentMethod,
+
+      paymentMethod: "COD",
       paymentStatus: "Pending",
       orderStatus: "Pending",
-      orderNumber,
+
+      subtotal,
+      discountAmount,
+      shippingAmount,
+      totalAmount,
+
+      couponCode: normalizedCouponCode,
+      couponId: coupon ? coupon._id : null,
+
+      notes: notes ? notes.trim() : "",
     });
 
-    if (appliedCoupon) {
-      appliedCoupon.usedCount += 1;
-      await appliedCoupon.save();
+    // -----------------------------
+    // Reduce product stock
+    // -----------------------------
+    for (const item of validItems) {
+      const updatedProduct = await Product.findOneAndUpdate(
+        {
+          _id: item.product,
+          stock: {
+            $gte: item.quantity,
+          },
+        },
+        {
+          $inc: {
+            stock: -item.quantity,
+          },
+        },
+        {
+          new: true,
+        },
+      );
+
+      if (!updatedProduct) {
+        // This normally means stock changed
+        // between validation and update.
+        return res.status(400).json({
+          success: false,
+          message: "Stock changed while placing the order. Please try again.",
+        });
+      }
     }
 
-    // Reduce product stock
-    for (const item of cart.items) {
-      await Product.findByIdAndUpdate(item.product._id, {
+    // -----------------------------
+    // Update coupon usage
+    // -----------------------------
+    if (coupon) {
+      await Coupon.findByIdAndUpdate(coupon._id, {
         $inc: {
-          stock: -item.quantity,
+          usedCount: 1,
         },
       });
     }
 
-    // Clear cart after successful order
+    // -----------------------------
+    // Clear cart
+    // -----------------------------
     cart.items = [];
     cart.totalAmount = 0;
 
     await cart.save();
 
+    // -----------------------------
+    // Populate order
+    // -----------------------------
+    const populatedOrder = await Order.findById(order._id)
+      .populate({
+        path: "user",
+        select: "name email phone",
+      })
+      .populate({
+        path: "items.product",
+        select: "name brand model price mrp images stock",
+      });
+
     res.status(201).json({
+      success: true,
       message: "Order placed successfully",
-      order,
+      order: populatedOrder,
     });
   } catch (error) {
-    console.error("Create order error:", error.message);
+    console.error("Create order error:", error);
 
     res.status(500).json({
-      message: "Failed to create order",
+      success: false,
+      message: "Failed to place order",
+      error: error.message,
     });
   }
 };
 
-// Get logged-in user's orders
+// =====================================
+// GET MY ORDERS
+// =====================================
 const getMyOrders = async (req, res) => {
   try {
-    const orders = await Order.find({
+    const { page = 1, limit = 10, status = "" } = req.query;
+
+    const currentPage = Math.max(Number(page), 1);
+
+    const itemsPerPage = Math.min(Math.max(Number(limit), 1), 50);
+
+    const filter = {
       user: req.user._id,
-    })
-      .populate("items.product")
+    };
+
+    if (status) {
+      const allowedStatuses = [
+        "Pending",
+        "Confirmed",
+        "Processing",
+        "Shipped",
+        "Delivered",
+        "Cancelled",
+      ];
+
+      if (allowedStatuses.includes(status)) {
+        filter.orderStatus = status;
+      }
+    }
+
+    const totalOrders = await Order.countDocuments(filter);
+
+    const orders = await Order.find(filter)
+      .populate({
+        path: "items.product",
+        select: "name brand model price mrp images",
+      })
       .sort({
         createdAt: -1,
-      });
+      })
+      .skip((currentPage - 1) * itemsPerPage)
+      .limit(itemsPerPage);
 
     res.json({
+      success: true,
       orders,
+      pagination: {
+        currentPage,
+        totalPages: Math.ceil(totalOrders / itemsPerPage),
+        totalOrders,
+        limit: itemsPerPage,
+      },
     });
   } catch (error) {
-    console.error("Get my orders error:", error.message);
+    console.error("Get my orders error:", error);
 
     res.status(500).json({
-      message: "Failed to get orders",
+      success: false,
+      message: "Failed to load your orders",
+      error: error.message,
     });
   }
 };
 
-// Get single order
-const getOrderById = async (req, res) => {
+// =====================================
+// GET MY ORDER BY ID
+// =====================================
+const getMyOrderById = async (req, res) => {
   try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid order ID",
+      });
+    }
+
     const order = await Order.findOne({
-      _id: req.params.id,
+      _id: id,
       user: req.user._id,
-    }).populate("items.product");
+    })
+      .populate({
+        path: "items.product",
+        select: "name brand model price mrp images stock",
+      })
+      .populate({
+        path: "user",
+        select: "name email phone",
+      });
 
     if (!order) {
       return res.status(404).json({
+        success: false,
         message: "Order not found",
       });
     }
 
     res.json({
+      success: true,
       order,
     });
   } catch (error) {
-    console.error("Get order error:", error.message);
+    console.error("Get my order error:", error);
 
     res.status(500).json({
-      message: "Failed to get order",
+      success: false,
+      message: "Failed to load order",
+      error: error.message,
     });
   }
 };
 
-// Cancel order
-const cancelOrder = async (req, res) => {
+// =====================================
+// CANCEL MY ORDER
+// =====================================
+const cancelMyOrder = async (req, res) => {
   try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid order ID",
+      });
+    }
+
     const order = await Order.findOne({
-      _id: req.params.id,
+      _id: id,
       user: req.user._id,
     });
 
     if (!order) {
       return res.status(404).json({
+        success: false,
         message: "Order not found",
       });
     }
 
-    // Only Pending or Confirmed orders can be cancelled
-    if (order.orderStatus !== "Pending" && order.orderStatus !== "Confirmed") {
+    const cancellableStatuses = ["Pending", "Confirmed"];
+
+    if (!cancellableStatuses.includes(order.orderStatus)) {
       return res.status(400).json({
-        message: "This order cannot be cancelled",
+        success: false,
+        message: "This order can no longer be cancelled",
       });
     }
 
-    // Restore product stock
+    order.orderStatus = "Cancelled";
+
+    await order.save();
+
+    // Restore stock.
     for (const item of order.items) {
       await Product.findByIdAndUpdate(item.product, {
         $inc: {
@@ -263,61 +485,191 @@ const cancelOrder = async (req, res) => {
       });
     }
 
-    // Restore coupon usage
-    if (order.couponCode) {
-      await Coupon.findOneAndUpdate(
-        {
-          code: order.couponCode,
-          usedCount: { $gt: 0 },
+    // Restore coupon usage.
+    if (order.couponId) {
+      await Coupon.findByIdAndUpdate(order.couponId, {
+        $inc: {
+          usedCount: -1,
         },
-        {
-          $inc: {
-            usedCount: -1,
-          },
-        },
-      );
+      });
     }
 
-    order.orderStatus = "Cancelled";
-
-    await order.save();
-
-    res.json({
-      message: "Order cancelled successfully",
-      order,
-    });
-  } catch (error) {
-    console.error("Cancel order error:", error.message);
-
-    res.status(500).json({
-      message: "Failed to cancel order",
-    });
-  }
-};
-
-// Get all orders - Admin
-const getAllOrders = async (req, res) => {
-  try {
-    const orders = await Order.find()
-      .populate("user", "name email phone")
-      .populate("items.product")
-      .sort({
-        createdAt: -1,
+    const updatedOrder = await Order.findById(order._id)
+      .populate({
+        path: "items.product",
+        select: "name brand model price mrp images stock",
+      })
+      .populate({
+        path: "user",
+        select: "name email phone",
       });
 
     res.json({
-      orders,
+      success: true,
+      message: "Order cancelled successfully",
+      order: updatedOrder,
     });
   } catch (error) {
-    console.error("Get all orders error:", error.message);
+    console.error("Cancel order error:", error);
 
     res.status(500).json({
-      message: "Failed to get all orders",
+      success: false,
+      message: "Failed to cancel order",
+      error: error.message,
     });
   }
 };
 
-// Update order status - Admin
+// =====================================
+// GET ALL ORDERS - ADMIN
+// =====================================
+const getAllOrders = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = "", status = "" } = req.query;
+
+    const currentPage = Math.max(Number(page), 1);
+
+    const itemsPerPage = Math.min(Math.max(Number(limit), 1), 100);
+
+    const filter = {};
+
+    if (status) {
+      const allowedStatuses = [
+        "Pending",
+        "Confirmed",
+        "Processing",
+        "Shipped",
+        "Delivered",
+        "Cancelled",
+      ];
+
+      if (allowedStatuses.includes(status)) {
+        filter.orderStatus = status;
+      }
+    }
+
+    if (search.trim()) {
+      const users = await require("../models/User")
+        .find({
+          $or: [
+            {
+              name: {
+                $regex: search.trim(),
+                $options: "i",
+              },
+            },
+            {
+              email: {
+                $regex: search.trim(),
+                $options: "i",
+              },
+            },
+            {
+              phone: {
+                $regex: search.trim(),
+                $options: "i",
+              },
+            },
+          ],
+        })
+        .select("_id");
+
+      filter.user = {
+        $in: users.map((user) => user._id),
+      };
+    }
+
+    const totalOrders = await Order.countDocuments(filter);
+
+    const orders = await Order.find(filter)
+      .populate({
+        path: "user",
+        select: "name email phone",
+      })
+      .populate({
+        path: "items.product",
+        select: "name brand model price mrp images",
+      })
+      .sort({
+        createdAt: -1,
+      })
+      .skip((currentPage - 1) * itemsPerPage)
+      .limit(itemsPerPage);
+
+    res.json({
+      success: true,
+      orders,
+      pagination: {
+        currentPage,
+        totalPages: Math.ceil(totalOrders / itemsPerPage),
+        totalOrders,
+        limit: itemsPerPage,
+      },
+    });
+  } catch (error) {
+    console.error("Get all orders error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to load orders",
+      error: error.message,
+    });
+  }
+};
+
+// =====================================
+// GET ORDER BY ID - ADMIN
+// =====================================
+const getOrderById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid order ID",
+      });
+    }
+
+    const order = await Order.findById(id)
+      .populate({
+        path: "user",
+        select: "name email phone addresses",
+      })
+      .populate({
+        path: "items.product",
+        select: "name brand model price mrp images stock",
+      })
+      .populate({
+        path: "couponId",
+        select: "code discountType discountValue",
+      });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      order,
+    });
+  } catch (error) {
+    console.error("Get order by ID error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to load order",
+      error: error.message,
+    });
+  }
+};
+
+// =====================================
+// UPDATE ORDER STATUS - ADMIN
+// =====================================
 const updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -333,6 +685,7 @@ const updateOrderStatus = async (req, res) => {
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
+        success: false,
         message: "Invalid order status",
       });
     }
@@ -341,23 +694,83 @@ const updateOrderStatus = async (req, res) => {
 
     if (!order) {
       return res.status(404).json({
+        success: false,
         message: "Order not found",
+      });
+    }
+
+    const previousStatus = order.orderStatus;
+
+    // Prevent changing a cancelled order.
+    if (previousStatus === "Cancelled" && status !== "Cancelled") {
+      return res.status(400).json({
+        success: false,
+        message: "A cancelled order cannot be reopened",
+      });
+    }
+
+    // Prevent changing a delivered order.
+    if (previousStatus === "Delivered" && status !== "Delivered") {
+      return res.status(400).json({
+        success: false,
+        message: "A delivered order cannot be changed",
       });
     }
 
     order.orderStatus = status;
 
+    if (status === "Delivered") {
+      order.paymentStatus =
+        order.paymentMethod === "COD" ? "Paid" : order.paymentStatus;
+    }
+
     await order.save();
 
+    // If admin cancels an order,
+    // restore product stock.
+    if (status === "Cancelled" && previousStatus !== "Cancelled") {
+      for (const item of order.items) {
+        await Product.findByIdAndUpdate(item.product, {
+          $inc: {
+            stock: item.quantity,
+          },
+        });
+      }
+
+      if (order.couponId) {
+        await Coupon.findByIdAndUpdate(order.couponId, {
+          $inc: {
+            usedCount: -1,
+          },
+        });
+      }
+    }
+
+    // If a cancelled order is somehow
+    // changed back, stock restoration
+    // is intentionally blocked above.
+    const updatedOrder = await Order.findById(order._id)
+      .populate({
+        path: "user",
+        select: "name email phone",
+      })
+      .populate({
+        path: "items.product",
+        select: "name brand model price mrp images stock",
+      });
+
     res.json({
+      success: true,
       message: "Order status updated successfully",
-      order,
+      order: updatedOrder,
     });
   } catch (error) {
-    console.error("Update order status error:", error.message);
+    console.error("Update order status error:", error);
 
     res.status(500).json({
+      success: false,
       message: "Failed to update order status",
+      error: error.message,
     });
   }
 };
@@ -365,8 +778,9 @@ const updateOrderStatus = async (req, res) => {
 module.exports = {
   createOrder,
   getMyOrders,
-  getOrderById,
-  cancelOrder,
+  getMyOrderById,
+  cancelMyOrder,
   getAllOrders,
+  getOrderById,
   updateOrderStatus,
 };

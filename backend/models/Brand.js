@@ -25,6 +25,7 @@ const brandSchema = new mongoose.Schema(
     description: {
       type: String,
       default: "",
+      trim: true,
     },
 
     isActive: {

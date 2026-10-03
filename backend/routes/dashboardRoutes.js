@@ -6,6 +6,10 @@ const { protect, adminOnly } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
+// =====================================
+// ADMIN DASHBOARD
+// =====================================
+
 router.get("/stats", protect, adminOnly, getDashboardStats);
 
 module.exports = router;

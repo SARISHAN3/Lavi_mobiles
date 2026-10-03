@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { MdAddPhotoAlternate, MdDelete, MdArrowBack } from "react-icons/md";
 
 function AddProduct() {
   const navigate = useNavigate();
+
+  // Product options loaded from backend
+  const [productOptions, setProductOptions] = useState({});
 
   const [formData, setFormData] = useState({
     name: "",
@@ -27,11 +30,42 @@ function AddProduct() {
     images: [],
   });
 
+  // Load reusable product options
+  useEffect(() => {
+    const loadProductOptions = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:5000/api/product-options",
+        );
+
+        const options = {};
+
+        response.data.options.forEach((option) => {
+          if (!options[option.type]) {
+            options[option.type] = [];
+          }
+
+          options[option.type].push(option.value);
+        });
+
+        setProductOptions(options);
+      } catch (error) {
+        console.error(
+          "Failed to load product options:",
+          error.response?.data || error.message,
+        );
+      }
+    };
+
+    loadProductOptions();
+  }, []);
+
   const [saving, setSaving] = useState(false);
 
   const sellingPrice =
     Number(formData.mrp || 0) - Number(formData.discount || 0);
 
+  // Handle image selection
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
 
@@ -41,7 +75,6 @@ function AddProduct() {
 
     setFormData((prev) => {
       const remainingSlots = 10 - prev.images.length;
-
       const newImages = files.slice(0, remainingSlots);
 
       return {
@@ -53,6 +86,7 @@ function AddProduct() {
     e.target.value = "";
   };
 
+  // Remove image
   const handleRemoveImage = (index) => {
     setFormData((prev) => ({
       ...prev,
@@ -60,6 +94,7 @@ function AddProduct() {
     }));
   };
 
+  // Handle form input
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -69,6 +104,7 @@ function AddProduct() {
     }));
   };
 
+  // Submit product
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -110,6 +146,7 @@ function AddProduct() {
       // Send calculated selling price
       data.append("price", sellingPrice);
 
+      // Send images
       formData.images.forEach((image) => {
         data.append("images", image);
       });
@@ -239,15 +276,18 @@ function AddProduct() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <InputField
+            {/* Product Name - Reusable Option */}
+            <OptionField
               name="name"
               label="Product Name"
               placeholder="Samsung Galaxy S25"
               value={formData.name}
               onChange={handleChange}
+              options={productOptions.name || []}
               required
             />
 
+            {/* Brand */}
             <InputField
               name="brand"
               label="Brand"
@@ -257,14 +297,17 @@ function AddProduct() {
               required
             />
 
-            <InputField
+            {/* Model */}
+            <OptionField
               name="model"
               label="Model"
               placeholder="Galaxy S25"
               value={formData.model}
               onChange={handleChange}
+              options={productOptions.model || []}
             />
 
+            {/* Category */}
             <InputField
               name="category"
               label="Category"
@@ -286,6 +329,7 @@ function AddProduct() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {/* MRP */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 MRP
@@ -309,6 +353,7 @@ function AddProduct() {
               </div>
             </div>
 
+            {/* Discount */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Discount Amount
@@ -331,6 +376,7 @@ function AddProduct() {
               </div>
             </div>
 
+            {/* Selling Price */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Selling Price
@@ -375,12 +421,13 @@ function AddProduct() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <InputField
+            <OptionField
               name="ram"
               label="RAM"
               placeholder="8GB"
               value={formData.ram}
               onChange={handleChange}
+              options={productOptions.ram || []}
             />
 
             <InputField
@@ -452,6 +499,7 @@ function AddProduct() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Stock */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Stock Quantity
@@ -469,6 +517,7 @@ function AddProduct() {
               />
             </div>
 
+            {/* Low Stock */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Low Stock Limit
@@ -536,7 +585,9 @@ function AddProduct() {
   );
 }
 
-/* Reusable input */
+/* =========================================================
+   Reusable Input
+========================================================= */
 
 function InputField({
   name,
@@ -561,6 +612,45 @@ function InputField({
         required={required}
         className="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
       />
+    </div>
+  );
+}
+
+/* =========================================================
+   Reusable Product Option Field
+========================================================= */
+
+function OptionField({
+  name,
+  label,
+  placeholder,
+  value,
+  onChange,
+  options = [],
+  required = false,
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        {label}
+      </label>
+
+      <input
+        list={`${name}-options`}
+        type="text"
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        required={required}
+        className="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+      />
+
+      <datalist id={`${name}-options`}>
+        {options.map((option, index) => (
+          <option key={index} value={option} />
+        ))}
+      </datalist>
     </div>
   );
 }

@@ -13,6 +13,7 @@ function EditProduct() {
     model: "",
     mrp: "",
     discount: "",
+
     ram: "",
     storage: "",
     operatingSystem: "",
@@ -21,10 +22,22 @@ function EditProduct() {
     battery: "",
     processor: "",
     camera: "",
+
     stock: "",
     lowStockLimit: "5",
+
     category: "Mobile Phones",
+    categoryId: "",
+
     description: "",
+
+    connectivity: "",
+    compatibility: "",
+    waterResistance: "",
+    batteryLife: "",
+
+    isFeatured: false,
+    isActive: true,
   });
 
   const [existingImages, setExistingImages] = useState([]);
@@ -49,8 +62,10 @@ function EditProduct() {
           name: product.name || "",
           brand: product.brand || "",
           model: product.model || "",
+
           mrp: product.mrp || "",
           discount: product.discount || "",
+
           ram: product.ram || "",
           storage: product.storage || "",
           operatingSystem: product.operatingSystem || "",
@@ -59,11 +74,23 @@ function EditProduct() {
           battery: product.battery || "",
           processor: product.processor || "",
           camera: product.camera || "",
+
           stock: product.stock !== undefined ? product.stock : "",
           lowStockLimit:
             product.lowStockLimit !== undefined ? product.lowStockLimit : 5,
+
           category: product.category || "Mobile Phones",
+          categoryId: product.categoryId || "",
+
           description: product.description || "",
+
+          connectivity: product.connectivity || "",
+          compatibility: product.compatibility || "",
+          waterResistance: product.waterResistance || "",
+          batteryLife: product.batteryLife || "",
+
+          isFeatured: product.isFeatured || false,
+          isActive: product.isActive !== undefined ? product.isActive : true,
         });
 
         setExistingImages(product.images || []);
@@ -195,7 +222,17 @@ function EditProduct() {
       data.append("lowStockLimit", formData.lowStockLimit);
 
       data.append("category", formData.category);
+      data.append("categoryId", formData.categoryId);
+
       data.append("description", formData.description);
+
+      data.append("connectivity", formData.connectivity);
+      data.append("compatibility", formData.compatibility);
+      data.append("waterResistance", formData.waterResistance);
+      data.append("batteryLife", formData.batteryLife);
+
+      data.append("isFeatured", formData.isFeatured);
+      data.append("isActive", formData.isActive);
 
       // Existing images that were not removed
       data.append("existingImages", JSON.stringify(existingImages));
@@ -565,6 +602,38 @@ function EditProduct() {
               label="Camera"
               placeholder="50MP"
               value={formData.camera}
+              onChange={handleChange}
+            />
+
+            <InputField
+              name="connectivity"
+              label="Connectivity"
+              placeholder="Bluetooth 5.3 / Wi-Fi"
+              value={formData.connectivity}
+              onChange={handleChange}
+            />
+
+            <InputField
+              name="compatibility"
+              label="Compatibility"
+              placeholder="Android / iOS"
+              value={formData.compatibility}
+              onChange={handleChange}
+            />
+
+            <InputField
+              name="waterResistance"
+              label="Water Resistance"
+              placeholder="IP68"
+              value={formData.waterResistance}
+              onChange={handleChange}
+            />
+
+            <InputField
+              name="batteryLife"
+              label="Battery Life"
+              placeholder="Up to 7 days"
+              value={formData.batteryLife}
               onChange={handleChange}
             />
           </div>

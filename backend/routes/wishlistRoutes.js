@@ -4,17 +4,27 @@ const {
   getWishlist,
   addToWishlist,
   removeFromWishlist,
+  toggleWishlist,
+  clearWishlist,
 } = require("../controllers/wishlistController");
 
 const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-// All wishlist routes require login
+// Get current user's wishlist
 router.get("/", protect, getWishlist);
 
-router.post("/add", protect, addToWishlist);
+// Add product to wishlist
+router.post("/", protect, addToWishlist);
 
-router.delete("/remove/:productId", protect, removeFromWishlist);
+// Toggle product in wishlist
+router.post("/toggle", protect, toggleWishlist);
+
+// Remove product from wishlist
+router.delete("/:productId", protect, removeFromWishlist);
+
+// Clear entire wishlist
+router.delete("/", protect, clearWishlist);
 
 module.exports = router;

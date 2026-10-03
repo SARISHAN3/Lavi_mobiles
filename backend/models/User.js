@@ -1,5 +1,53 @@
 const mongoose = require("mongoose");
 
+const addressSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    phone: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    street: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    city: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    state: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    pincode: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    isDefault: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  {
+    _id: true,
+  },
+);
+
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -16,14 +64,16 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
 
-    password: {
-      type: String,
-      required: true,
-    },
-
     phone: {
       type: String,
       default: "",
+      trim: true,
+    },
+
+    password: {
+      type: String,
+      required: true,
+      minlength: 6,
     },
 
     role: {
@@ -32,23 +82,14 @@ const userSchema = new mongoose.Schema(
       default: "customer",
     },
 
-    address: {
-      street: {
-        type: String,
-        default: "",
-      },
-      city: {
-        type: String,
-        default: "",
-      },
-      state: {
-        type: String,
-        default: "",
-      },
-      pincode: {
-        type: String,
-        default: "",
-      },
+    profileImage: {
+      type: String,
+      default: "",
+    },
+
+    addresses: {
+      type: [addressSchema],
+      default: [],
     },
 
     isActive: {

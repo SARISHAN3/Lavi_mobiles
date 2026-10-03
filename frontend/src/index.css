@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* =========================================================
+   LAVI MOBILE - GLOBAL STYLES
+========================================================= */
+
+/* Enable manual dark mode using the .dark class */
+@custom-variant dark (&:where(.dark, .dark *));
+
 * {
   box-sizing: border-box;
 }
@@ -10,8 +17,11 @@ html {
 
 body {
   font-family: Arial, Helvetica, sans-serif;
-  background-color: #ffffff;
-  color: #1f1f1f;
+  background-color: #f7f7f8;
+  color: #1f2937;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 button,
@@ -23,4 +33,237 @@ select {
 
 button {
   cursor: pointer;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* =========================================================
+   LIGHT THEME
+========================================================= */
+
+:root {
+  --lavi-orange: #ff6b00;
+  --lavi-orange-dark: #e85d00;
+
+  --bg-primary: #f7f7f8;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+
+  --text-primary: #172033;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+
+  --border-color: #e5e7eb;
+
+  --shadow-card: 0 2px 8px rgba(15, 23, 42, 0.06);
+
+  --shadow-hover: 0 8px 24px rgba(15, 23, 42, 0.1);
+}
+
+/* =========================================================
+   DARK THEME
+========================================================= */
+
+.dark {
+  --bg-primary: #111315;
+  --bg-secondary: #181b1f;
+  --bg-card: #1d2125;
+
+  --text-primary: #f5f7fa;
+  --text-secondary: #aeb6c2;
+  --text-muted: #7d8794;
+
+  --border-color: #2b3036;
+
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.25);
+
+  --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* =========================================================
+   BODY THEME
+========================================================= */
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* =========================================================
+   COMMON LAVI CLASSES
+========================================================= */
+
+.lavi-page {
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+.lavi-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-card);
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    transform 0.3s ease;
+}
+
+.lavi-card:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+/* =========================================================
+   TEXT
+========================================================= */
+
+.lavi-heading {
+  color: var(--text-primary);
+}
+
+.lavi-text {
+  color: var(--text-secondary);
+}
+
+.lavi-muted {
+  color: var(--text-muted);
+}
+
+/* =========================================================
+   ORANGE BUTTON
+========================================================= */
+
+.lavi-button {
+  background-color: var(--lavi-orange);
+  color: #ffffff;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.lavi-button:hover {
+  background-color: var(--lavi-orange-dark);
+  box-shadow: 0 6px 16px rgba(255, 107, 0, 0.25);
+}
+
+.lavi-button:active {
+  transform: scale(0.98);
+}
+
+/* =========================================================
+   INPUTS
+========================================================= */
+
+.lavi-input {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.3s ease;
+}
+
+.lavi-input::placeholder {
+  color: var(--text-muted);
+}
+
+.lavi-input:focus {
+  border-color: var(--lavi-orange);
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.12);
+}
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #aeb4bc;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--lavi-orange);
+}
+
+/* =========================================================
+   HIDE HORIZONTAL SCROLLBAR
+========================================================= */
+
+.hide-scrollbar {
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* =========================================================
+   HERO SLIDER
+========================================================= */
+
+@keyframes lavi-slider {
+  0%,
+  20% {
+    transform: translateX(0);
+  }
+
+  25%,
+  45% {
+    transform: translateX(-25%);
+  }
+
+  50%,
+  70% {
+    transform: translateX(-50%);
+  }
+
+  75%,
+  95% {
+    transform: translateX(-75%);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.animate-lavi-slider {
+  animation: lavi-slider 20s infinite;
+}
+
+/* =========================================================
+   REDUCE MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

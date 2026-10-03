@@ -1,58 +1,61 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-
 const User = require("../models/User");
 
-// Generate JWT token
-const generateToken = (userId, role) => {
-  return jwt.sign(
-    {
-      userId,
-      role,
-    },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: "7d",
-    }
-  );
+const generateToken = (userId) => {
+  return jwt.sign({ userId }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
+  });
 };
 
-// Register user
-const registerUser = async (req, res) => {
+// ===============================
+// REGISTER
+// ===============================
+const register = async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, phone, password } = req.body;
 
-    // Check required fields
     if (!name || !email || !password) {
       return res.status(400).json({
+        success: false,
         message: "Name, email and password are required",
       });
     }
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-
-    if (existingUser) {
+    if (password.length < 6) {
       return res.status(400).json({
-        message: "User already exists",
+        success: false,
+        message: "Password must contain at least 6 characters",
       });
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const normalizedEmail = email.trim().toLowerCase();
 
-    // Create user
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      phone: phone || "",
+    const existingUser = await User.findOne({
+      email: normalizedEmail,
     });
 
-    // Generate token
-    const token = generateToken(user._id, user.role);
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "An account with this email already exists",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      name: name.trim(),
+      email: normalizedEmail,
+      phone: phone ? phone.trim() : "",
+      password: hashedPassword,
+      role: "customer",
+    });
+
+    const token = generateToken(user._id);
 
     res.status(201).json({
+      success: true,
       message: "Registration successful",
       token,
       user: {
@@ -61,61 +64,75 @@ const registerUser = async (req, res) => {
         email: user.email,
         phone: user.phone,
         role: user.role,
+        profileImage: user.profileImage,
+        addresses: user.addresses,
       },
     });
   } catch (error) {
-    console.error("Registration error:", error.message);
+    console.error("Register error:", error);
+
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: "An account with this email already exists",
+      });
+    }
 
     res.status(500).json({
-      message: "Server error",
+      success: false,
+      message: "Registration failed",
+      error: error.message,
     });
   }
 };
 
-// Login user
-const loginUser = async (req, res) => {
+// ===============================
+// LOGIN
+// ===============================
+const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Check required fields
     if (!email || !password) {
       return res.status(400).json({
+        success: false,
         message: "Email and password are required",
       });
     }
 
-    // Find user
-    const user = await User.findOne({ email });
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const user = await User.findOne({
+      email: normalizedEmail,
+    });
 
     if (!user) {
       return res.status(401).json({
+        success: false,
         message: "Invalid email or password",
       });
     }
 
-    // Check account status
     if (!user.isActive) {
       return res.status(403).json({
+        success: false,
         message: "Your account is inactive",
       });
     }
 
-    // Compare password
-    const isPasswordMatch = await bcrypt.compare(
-      password,
-      user.password
-    );
+    const passwordMatch = await bcrypt.compare(password, user.password);
 
-    if (!isPasswordMatch) {
+    if (!passwordMatch) {
       return res.status(401).json({
+        success: false,
         message: "Invalid email or password",
       });
     }
 
-    // Generate token
-    const token = generateToken(user._id, user.role);
+    const token = generateToken(user._id);
 
     res.json({
+      success: true,
       message: "Login successful",
       token,
       user: {
@@ -124,18 +141,52 @@ const loginUser = async (req, res) => {
         email: user.email,
         phone: user.phone,
         role: user.role,
+        profileImage: user.profileImage,
+        addresses: user.addresses,
       },
     });
   } catch (error) {
-    console.error("Login error:", error.message);
+    console.error("Login error:", error);
 
     res.status(500).json({
-      message: "Server error",
+      success: false,
+      message: "Login failed",
+      error: error.message,
+    });
+  }
+};
+
+// ===============================
+// GET CURRENT USER
+// ===============================
+const getMe = async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      user: {
+        id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+        phone: req.user.phone,
+        role: req.user.role,
+        profileImage: req.user.profileImage,
+        addresses: req.user.addresses,
+        isActive: req.user.isActive,
+      },
+    });
+  } catch (error) {
+    console.error("Get current user error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to load user",
+      error: error.message,
     });
   }
 };
 
 module.exports = {
-  registerUser,
-  loginUser,
+  register,
+  login,
+  getMe,
 };

@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const productSchema = new mongoose.Schema(
   {
+    // Basic product information
     name: {
       type: String,
       required: true,
@@ -20,27 +21,46 @@ const productSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // Category
+    category: {
+      type: String,
+      default: "Mobile Phones",
+      trim: true,
+    },
+
+    categoryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+      default: null,
+    },
+
+    // Pricing
     price: {
       type: Number,
       required: true,
+      min: 0,
     },
 
     mrp: {
       type: Number,
       required: true,
+      min: 0,
     },
 
     discount: {
       type: Number,
       default: 0,
+      min: 0,
     },
 
+    // Images
     images: [
       {
         type: String,
       },
     ],
 
+    // Description
     description: {
       type: String,
       default: "",
@@ -52,6 +72,7 @@ const productSchema = new mongoose.Schema(
       },
     ],
 
+    // Mobile / product specifications
     ram: {
       type: String,
       default: "",
@@ -98,16 +119,41 @@ const productSchema = new mongoose.Schema(
       },
     ],
 
+    // Smartwatch / accessory specifications
+    connectivity: {
+      type: String,
+      default: "",
+    },
+
+    compatibility: {
+      type: String,
+      default: "",
+    },
+
+    waterResistance: {
+      type: String,
+      default: "",
+    },
+
+    batteryLife: {
+      type: String,
+      default: "",
+    },
+
+    // Stock
     stock: {
       type: Number,
       default: 0,
+      min: 0,
     },
 
     lowStockLimit: {
       type: Number,
       default: 5,
+      min: 0,
     },
 
+    // Reviews
     rating: {
       type: Number,
       default: 0,
@@ -118,13 +164,10 @@ const productSchema = new mongoose.Schema(
     reviewCount: {
       type: Number,
       default: 0,
+      min: 0,
     },
 
-    category: {
-      type: String,
-      default: "Mobile Phones",
-    },
-
+    // Product status
     isFeatured: {
       type: Boolean,
       default: false,
